@@ -10,6 +10,14 @@ All communication which goes through, both ways, is logged to stdout in a conven
 
 lupo just 150 lines of Go code. It runs on all platforms supported by Go. i.e. Linux, Windows, OSX, FreeBSD and more.
 
+Get the latest binary 
+---------------------
+
+[Windows](https://github.com/henning77/lupo/releases/download/v0.1.0/lupo_0.1.0_windows_386.zip) |
+[Mac OS X](https://github.com/henning77/lupo/releases/download/v0.1.0/lupo_0.1.0_darwin_amd64.zip) |
+[Linux tarball](https://github.com/henning77/lupo/releases/download/v0.1.0/lupo_0.1.0_linux_386.tar.gz) |
+[Linux .deb](https://github.com/henning77/lupo/releases/download/v0.1.0/lupo_0.1.0_i386.deb)
+
 Example 1: Log http traffic
 ---------------------------
 
