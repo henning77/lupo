@@ -99,7 +99,7 @@ func copyWithLog(dst io.Writer, src io.Reader, head string, tail string) {
 
 func handleConnection(src net.Conn) {
 	connId := <-counter
-	logPrint(fmt.Sprintf("New Conn: %v", connId))
+	logPrint(fmt.Sprintf("New connection: %v", connId))
 
 	dst, err := net.Dial("tcp", to)
 	if err != nil {

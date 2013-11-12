@@ -26,7 +26,8 @@ Example 1: Log http traffic
 If you point your browser to http://localhost:8080, lupo will print something like:
 
 	22:31:01.382 Listening to [:8080], forwarding to [google.com:80]
-	22:31:14.818 New Conn: 1
+	22:31:14.818 New connection: 1 (from localhost)
+
 	22:31:14.890 ->1
 	GET / HTTP/1.1
 	Host: localhost:8080
