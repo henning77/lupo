@@ -10,17 +10,25 @@ import (
 	"time"
 )
 
+// Host:port to listen from
 var from string
-var to string
-var counter = make(chan int)
 
+// Host:port to forward to
+var to string
+
+// Count the connections to make them easily identifiable
+var nextConnId = make(chan int)
+
+// Timestamp format for logging
 const stamp = "15:04:05.000"
 
+// Special Writer which writes head + nicely formatted binary / textual chunks + tail
 type transferLog struct {
 	head string
 	tail string
 }
 
+// Write nicely formatted binary / textual chunk
 func (l *transferLog) Write(p []byte) (n int, err error) {
 	logPrint(l.head)
 
@@ -32,11 +40,12 @@ func (l *transferLog) Write(p []byte) (n int, err error) {
 		if isPrintable(b) {
 			printableCount++
 
-			// char chunks should have a minimum length
+			// char chunks have a minimum length
 			if binChunk && printableCount >= 5 {
-				// Write the binary chunk
+				// Write the previous binary chunk
 				chunkEnd := i - printableCount + 1
 				writeHexChunk(p[chunkStart:chunkEnd])
+
 				binChunk = false
 				chunkStart = chunkEnd
 			}
@@ -44,8 +53,9 @@ func (l *transferLog) Write(p []byte) (n int, err error) {
 			printableCount = 0
 
 			if !binChunk {
-				// Write the char chunk
+				// Write the previous char chunk
 				os.Stdout.Write(p[chunkStart:i])
+
 				binChunk = true
 				chunkStart = i
 			}
@@ -89,6 +99,7 @@ func logPrint(s string) {
 	os.Stdout.WriteString("\n")
 }
 
+// Copy to dst and to logger
 func copyWithLog(dst io.Writer, src io.Reader, head string, tail string) {
 	logger := &transferLog{head: head, tail: tail}
 	multi := io.MultiWriter(dst, logger)
@@ -98,7 +109,7 @@ func copyWithLog(dst io.Writer, src io.Reader, head string, tail string) {
 }
 
 func handleConnection(src net.Conn) {
-	connId := <-counter
+	connId := <-nextConnId
 	logPrint(fmt.Sprintf("New connection: %v", connId))
 
 	dst, err := net.Dial("tcp", to)
@@ -112,10 +123,10 @@ func handleConnection(src net.Conn) {
 	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "\n")
 }
 
-func genCounter() {
+func genConnectionIds() {
 	i := 1
 	for {
-		counter <- i
+		nextConnId <- i
 		i++
 	}
 }
@@ -136,7 +147,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	go genCounter()
+	go genConnectionIds()
 
 	for {
 		conn, err := ln.Accept()
