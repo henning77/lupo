@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"time"
+	"crypto/tls"
 )
 
 // Host:port to listen from
@@ -15,6 +16,9 @@ var from string
 
 // Host:port to forward to
 var to string
+
+// If true, use SSL/TLS connections
+var ssl bool
 
 // Count the connections to make them easily identifiable
 var nextConnId = make(chan int)
@@ -112,7 +116,14 @@ func handleConnection(src net.Conn) {
 	connId := <-nextConnId
 	logPrint(fmt.Sprintf("New connection: %v", connId))
 
-	dst, err := net.Dial("tcp", to)
+	var dst net.Conn
+	var err error
+	if ssl {
+		dst, err = tls.Dial("tcp", to, tlsClientConfig())
+	} else {
+		dst, err = net.Dial("tcp", to)
+	}
+	
 	if err != nil {
 		logPrintf("Error connecting to dest: %v", err)
 		panic(err)
@@ -131,9 +142,24 @@ func genConnectionIds() {
 	}
 }
 
+func tlsServerConfig() *tls.Config {
+	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
+	if err != nil {
+		logPrintf("Could not read server certificate (cert.pem, key.pem): %v", err)
+		os.Exit(1)
+	}
+	return &tls.Config{Certificates: []tls.Certificate{cert}}
+}
+
+func tlsClientConfig() *tls.Config {
+	// Simply accept everything
+	return &tls.Config{InsecureSkipVerify: true}
+}
+
 func init() {
 	flag.StringVar(&from, "from", ":8081", "Source host/port to listen to")
 	flag.StringVar(&to, "to", "localhost:8080", "Destination host/port to forward to")
+	flag.BoolVar(&ssl, "ssl", false, "If true, expect and provide SSL/TLS connections. Needs cert.pem + key.pem in the same directory")
 }
 
 func main() {
@@ -141,7 +167,14 @@ func main() {
 
 	logPrintf("Listening to [%v], forwarding to [%v]", from, to)
 
-	ln, err := net.Listen("tcp", from)
+	var ln net.Listener
+	var err error
+	if ssl {
+		ln, err = tls.Listen("tcp", from, tlsServerConfig())
+	} else {
+		ln, err = net.Listen("tcp", from)
+	}
+	
 	if err != nil {
 		logPrintf("Could not open port: %v", err)
 		os.Exit(1)
