@@ -130,8 +130,8 @@ func handleConnection(src net.Conn) {
 	}
 
 	// Copy & log in both directions
-	go copyWithLog(dst, src, fmt.Sprintf("->%v", connId), "")
-	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "")
+	go copyWithLog(dst, src, fmt.Sprintf("->%v", connId), "\n")
+	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "\n")
 }
 
 func genConnectionIds() {
