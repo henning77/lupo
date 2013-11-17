@@ -108,13 +108,13 @@ func copyWithLog(dst io.Writer, src io.Reader, head string, tail string) {
 	logger := &transferLog{head: head, tail: tail}
 	multi := io.MultiWriter(dst, logger)
 	if _, err := io.Copy(multi, src); err != nil {
-		logPrintf("Error copying: %v", err)
+		logPrintf("Closed connection: %v", err)
 	}
 }
 
 func handleConnection(src net.Conn) {
 	connId := <-nextConnId
-	logPrint(fmt.Sprintf("New connection: %v", connId))
+	logPrint(fmt.Sprintf("New connection: %v (from %v)", connId, src.RemoteAddr()))
 
 	var dst net.Conn
 	var err error
@@ -130,8 +130,8 @@ func handleConnection(src net.Conn) {
 	}
 
 	// Copy & log in both directions
-	go copyWithLog(dst, src, fmt.Sprintf("->%v", connId), "\n")
-	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "\n")
+	go copyWithLog(dst, src, fmt.Sprintf("->%v", connId), "")
+	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "")
 }
 
 func genConnectionIds() {
@@ -157,13 +157,17 @@ func tlsClientConfig() *tls.Config {
 }
 
 func init() {
-	flag.StringVar(&from, "from", ":8081", "Source host/port to listen to")
-	flag.StringVar(&to, "to", "localhost:8080", "Destination host/port to forward to")
+	flag.StringVar(&from, "from", "", "Source host/port to listen to. Example: ':8081'")
+	flag.StringVar(&to, "to", "", "Destination host/port to forward to. Example: 'localhost:8080'")
 	flag.BoolVar(&ssl, "ssl", false, "If true, expect and provide SSL/TLS connections. Needs cert.pem + key.pem in the same directory")
 }
 
 func main() {
 	flag.Parse()
+	if len(from) == 0 || len(to) == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	logPrintf("Listening to [%v], forwarding to [%v]", from, to)
 
