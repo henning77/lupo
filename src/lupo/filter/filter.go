@@ -1,20 +1,28 @@
-package server
+package filter
 
 import (
+	"lupo/event"
 	"lupo/util"
-	"os"
-	"io"
-	"fmt"
-	"net"
-	"encoding/hex"
 )
 
 
+func Accept() {
+	for {
+		select {
+		case e:= <-event.Events:
+			util.Printf("Event: %v, %v, %v, %v\n", e.Cid, e.Kind, e.Stamp, e.Payload)
+		}
+	}
+}
+
+
+/*
 // Special Writer which writes head + nicely formatted binary / textual chunks + tail
 type transferLog struct {
 	head string
 	tail string
 }
+
 
 // Write nicely formatted binary / textual chunk
 func (l *transferLog) Write(p []byte) (n int, err error) {
@@ -61,6 +69,7 @@ func (l *transferLog) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+
 func writeHexChunk(p []byte) {
 	dumper := hex.Dumper(os.Stdout)
 	dumper.Write(p)
@@ -70,18 +79,4 @@ func writeHexChunk(p []byte) {
 func isPrintable(b byte) bool {
 	return b == 0x0d || b == 0x0a || (b >= 0x20 && b <= 0x7e)
 }
-
-// Copy to dst and to logger
-func copyWithLog(dst io.Writer, src io.Reader, head string, tail string) {
-	logger := &transferLog{head: head, tail: tail}
-	multi := io.MultiWriter(dst, logger)
-	if _, err := io.Copy(multi, src); err != nil {
-		util.Printf("Closed connection: %v", err)
-	}
-}
-
-func handle(dst net.Conn, src net.Conn, connId int) {
-	// Copy & log in both directions
-	go copyWithLog(dst, src, fmt.Sprintf("->%v", connId), "\n")
-	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "\n")
-}
+*/

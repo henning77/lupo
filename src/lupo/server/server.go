@@ -6,6 +6,8 @@ import (
 	"os"
 	"net"
 	"fmt"
+	"lupo/event"
+	"lupo/handler"
 )
 
 // Host:port to listen from
@@ -18,14 +20,14 @@ var To string
 var Ssl bool
 
 // Count the connections to make them easily identifiable
-var nextConnId = make(chan int)
+var nextConnId = make(chan event.ConnId)
 
 func init() {
 	go genConnectionIds()
 }
 
 func genConnectionIds() {
-	i := 1
+	var i event.ConnId = 1
 	for {
 		nextConnId <- i
 		i++
@@ -63,7 +65,7 @@ func handleConnection(src net.Conn) {
 		panic(err)
 	}
 
-	handle(dst, src, connId)
+	handler.Handle(dst, src, connId)
 }
 
 func Listen() {
