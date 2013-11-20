@@ -1,4 +1,10 @@
-package lupo
+package util
+
+import (
+	"time"
+	"os"
+	"fmt"
+)
 
 // Timestamp format for logging
 const stamp = "15:04:05.000"

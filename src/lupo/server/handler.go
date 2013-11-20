@@ -1,37 +1,14 @@
-package lupo
+package server
 
-// Count the connections to make them easily identifiable
-var nextConnId = make(chan int)
+import (
+	"lupo/util"
+	"os"
+	"io"
+	"fmt"
+	"net"
+	"encoding/hex"
+)
 
-func genConnectionIds() {
-	i := 1
-	for {
-		nextConnId <- i
-		i++
-	}
-}
-
-func handleConnection(src net.Conn) {
-	connId := <-nextConnId
-	logPrint(fmt.Sprintf("New connection: %v (from %v)", connId, src.RemoteAddr()))
-
-	var dst net.Conn
-	var err error
-	if ssl {
-		dst, err = tls.Dial("tcp", to, tlsClientConfig())
-	} else {
-		dst, err = net.Dial("tcp", to)
-	}
-	
-	if err != nil {
-		logPrintf("Error connecting to dest: %v", err)
-		panic(err)
-	}
-
-	// Copy & log in both directions
-	go copyWithLog(dst, src, fmt.Sprintf("->%v", connId), "\n")
-	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "\n")
-}
 
 // Special Writer which writes head + nicely formatted binary / textual chunks + tail
 type transferLog struct {
@@ -41,7 +18,7 @@ type transferLog struct {
 
 // Write nicely formatted binary / textual chunk
 func (l *transferLog) Write(p []byte) (n int, err error) {
-	logPrint(l.head)
+	util.Print(l.head)
 
 	binChunk := false
 	chunkStart := 0
@@ -99,6 +76,12 @@ func copyWithLog(dst io.Writer, src io.Reader, head string, tail string) {
 	logger := &transferLog{head: head, tail: tail}
 	multi := io.MultiWriter(dst, logger)
 	if _, err := io.Copy(multi, src); err != nil {
-		logPrintf("Closed connection: %v", err)
+		util.Printf("Closed connection: %v", err)
 	}
+}
+
+func handle(dst net.Conn, src net.Conn, connId int) {
+	// Copy & log in both directions
+	go copyWithLog(dst, src, fmt.Sprintf("->%v", connId), "\n")
+	go copyWithLog(src, dst, fmt.Sprintf("<-%v", connId), "\n")
 }
