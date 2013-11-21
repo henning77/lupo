@@ -5,6 +5,7 @@ import (
 	"lupo/event"
 	"io"
 	"net"
+	"time"
 )
 
 type sendOrRcv func(cid event.ConnId, payload []byte)
@@ -12,10 +13,27 @@ type sendOrRcv func(cid event.ConnId, payload []byte)
 type EventGen struct {
 	cid event.ConnId
 	action sendOrRcv
+	mark time.Time = time.Now()
 }
 
 func (g *EventGen) Write(p []byte) (n int, err error) {
 	g.action(g.cid, p)
+	/*
+	TODO Not sure if we need payload combination at this level (or if at filter level is sufficient)
+	now := time.Now()
+
+	// Check if we should combine payloads
+	// TODO how to ensure event gets written after 5ms elapsed??
+	if now.Sub(mark) < 5 * time.Millisecond {
+		// TODO Buffer payload
+
+	} else {
+		// TODO only write after 5ms have elapsed
+		
+
+		mark = now
+	}
+	*/
 	return len(p), nil
 }
 

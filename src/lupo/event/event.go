@@ -15,6 +15,13 @@ type Event struct {
 	Payload []byte
 }
 
+type HttpEvent struct {
+	Event
+	Method []byte
+	Headers []byte
+	Content []byte
+}
+
 type ConnId int
 type EventKind byte
 
