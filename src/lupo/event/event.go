@@ -7,21 +7,6 @@ import (
 // All events from all connections go here
 var Events = make(chan *Event, 1000)
 
-// An event on a specific connection.
-type Event struct {
-	Cid     ConnId
-	Kind    EventKind
-	Stamp time.Time
-	Payload []byte
-}
-
-type HttpEvent struct {
-	Event
-	Method []byte
-	Headers []byte
-	Content []byte
-}
-
 type ConnId int
 type EventKind byte
 
@@ -33,18 +18,56 @@ const (
 	Receive 
 )
 
-func Connected(cid ConnId) {
-	Events <- &Event{Cid:cid, Kind:Connect, Stamp:time.Now(), Payload:nil}
+// An event on a specific connection.
+type Event struct {
+	Cid     ConnId
+	Kind    EventKind
+	Stamp time.Time
+	Payload []byte
 }
 
-func Disconnected(cid ConnId) {
-	Events <- &Event{Cid:cid, Kind:Disconnect, Stamp:time.Now(), Payload:nil}
+type HttpEvent struct {
+	Event
+	Start []byte
+	Headers textproto.MIMEHeader
+	Body []byte
 }
 
-func Sent(cid ConnId, payload []byte) {
-	Events <- &Event{Cid:cid, Kind:Send, Stamp:time.Now(), Payload:payload}
+func PostConnect(cid ConnId) {
+	Events <- &Event{
+		Cid:cid,
+		Kind:Connect,
+		Stamp:time.Now(),
+		Payload:nil
+	}
 }
 
-func Received(cid ConnId, payload []byte) {
-	Events <- &Event{Cid:cid, Kind:Receive, Stamp:time.Now(), Payload:payload}
+func PostDisconnect(cid ConnId) {
+	Events <- &Event{
+		Cid:cid,
+		Kind:Disconnect,
+		Stamp:time.Now(),
+		Payload:nil
+	}
+}
+
+func Post(cid ConnId, kind EventKind, stamp time.Time, payload []byte) {
+	Events <- &Event{
+		Cid:cid,
+		Kind:kind,
+		Stamp:stamp,
+		Payload:payload
+	}
+}
+
+func PostHttp(cid ConnId, kind EventKind, stamp time.Time, payload []byte, start []byte, headers textproto.MIMEHeader, body []byte) {
+	Events <- &HttpEvent{
+		Cid:cid,
+		Kind:kind,
+		Stamp:stamp,
+		Payload:payload,
+		Start:start,
+		Headers:headers,
+		Body:body
+	}
 }

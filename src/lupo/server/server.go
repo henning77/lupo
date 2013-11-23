@@ -49,8 +49,8 @@ func tlsClientConfig() *tls.Config {
 }
 
 func handleConnection(src net.Conn) {
-	connId := <-nextConnId
-	util.Print(fmt.Sprintf("New connection: %v (from %v)", connId, src.RemoteAddr()))
+	cid := <-nextConnId
+	util.Print(fmt.Sprintf("New connection: %v (from %v)", cid, src.RemoteAddr()))
 
 	var dst net.Conn
 	var err error
@@ -65,7 +65,8 @@ func handleConnection(src net.Conn) {
 		panic(err)
 	}
 
-	handler.Handle(dst, src, connId)
+	handler := handler.NewHandler(dst, src, cid)
+	handler.Handle()
 }
 
 func Listen() {
