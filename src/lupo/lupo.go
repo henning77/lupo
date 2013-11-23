@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 	"lupo/server"
-	"lupo/filter"
+	"lupo/printer"
 )
 
 func init() {
@@ -20,6 +20,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	go filter.Accept()
+	go printer.Accept()
 	server.Listen()
 }

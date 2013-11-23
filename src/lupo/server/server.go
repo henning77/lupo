@@ -1,7 +1,7 @@
 package server
 
 import (
-	"lupo/util"
+	"lupo/out"
 	"crypto/tls"
 	"os"
 	"net"
@@ -37,7 +37,7 @@ func genConnectionIds() {
 func tlsServerConfig() *tls.Config {
 	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
-		util.Printf("Could not read server certificate (cert.pem, key.pem): %v", err)
+		out.Printf("Could not read server certificate (cert.pem, key.pem): %v", err)
 		os.Exit(1)
 	}
 	return &tls.Config{Certificates: []tls.Certificate{cert}}
@@ -50,7 +50,7 @@ func tlsClientConfig() *tls.Config {
 
 func handleConnection(src net.Conn) {
 	cid := <-nextConnId
-	util.Print(fmt.Sprintf("New connection: %v (from %v)", cid, src.RemoteAddr()))
+	out.Print(fmt.Sprintf("New connection: %v (from %v)", cid, src.RemoteAddr()))
 
 	var dst net.Conn
 	var err error
@@ -61,7 +61,7 @@ func handleConnection(src net.Conn) {
 	}
 	
 	if err != nil {
-		util.Printf("Error connecting to dest: %v", err)
+		out.Printf("Error connecting to dest: %v", err)
 		panic(err)
 	}
 
@@ -70,7 +70,7 @@ func handleConnection(src net.Conn) {
 }
 
 func Listen() {
-	util.Printf("Listening to [%v], forwarding to [%v]", From, To)
+	out.Printf("Listening to [%v], forwarding to [%v]", From, To)
 
 	var ln net.Listener
 	var err error
@@ -81,14 +81,14 @@ func Listen() {
 	}
 	
 	if err != nil {
-		util.Printf("Could not open port: %v", err)
+		out.Printf("Could not open port: %v", err)
 		os.Exit(1)
 	}
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			util.Printf("Error accepting: %v", err)
+			out.Printf("Error accepting: %v", err)
 			continue
 		}
 		go handleConnection(conn)

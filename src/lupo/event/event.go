@@ -2,10 +2,11 @@ package event
 
 import (
 	"time"
+	"net/textproto"
 )
 
 // All events from all connections go here
-var Events = make(chan *Event, 1000)
+var Events = make(chan interface{}, 1000)
 
 type ConnId int
 type EventKind byte
@@ -38,8 +39,7 @@ func PostConnect(cid ConnId) {
 		Cid:cid,
 		Kind:Connect,
 		Stamp:time.Now(),
-		Payload:nil
-	}
+		Payload:nil}
 }
 
 func PostDisconnect(cid ConnId) {
@@ -47,8 +47,7 @@ func PostDisconnect(cid ConnId) {
 		Cid:cid,
 		Kind:Disconnect,
 		Stamp:time.Now(),
-		Payload:nil
-	}
+		Payload:nil}
 }
 
 func Post(cid ConnId, kind EventKind, stamp time.Time, payload []byte) {
@@ -56,18 +55,13 @@ func Post(cid ConnId, kind EventKind, stamp time.Time, payload []byte) {
 		Cid:cid,
 		Kind:kind,
 		Stamp:stamp,
-		Payload:payload
-	}
+		Payload:payload}
 }
 
 func PostHttp(cid ConnId, kind EventKind, stamp time.Time, payload []byte, start []byte, headers textproto.MIMEHeader, body []byte) {
 	Events <- &HttpEvent{
-		Cid:cid,
-		Kind:kind,
-		Stamp:stamp,
-		Payload:payload,
+		Event:Event{Cid:cid, Kind:kind, Stamp:stamp, Payload:payload},
 		Start:start,
 		Headers:headers,
-		Body:body
-	}
+		Body:body}
 }

@@ -1,11 +1,12 @@
 package scanner
 
 import (
-	"lupo/handler"
+	"lupo/stream"
 	"lupo/event"
+	"net/textproto"
 	"time"
-	"sync"
 	"bufio"
+	"strings"
 	"bytes"
 )
 
@@ -13,12 +14,12 @@ const (
 	scanDelay = 20 * time.Millisecond
 )
 
-type Scanner {
-	stream *handler.Stream
+type Scanner struct {
+	stream *stream.Stream
 	timer *time.Timer
 }
 
-func NewScanner(s *handler.Stream) (*Scanner) {
+func NewScanner(s *stream.Stream) (*Scanner) {
 	return &Scanner{stream:s}
 }
 
@@ -39,7 +40,7 @@ func (s *Scanner) NotifyUpdate() {
 
 func (s *Scanner) scan() {
 	// Ensure incoming chunks doesn't modify the stream
-	s.Lock()
+	s.stream.Lock()
 
 	for _, chunk := range s.stream.Chunks {
 		// Copy the chunk for our own use
@@ -53,7 +54,7 @@ func (s *Scanner) scan() {
 		// Receive stream:
 		//     1) HTTP response (maybe with content)
 		//     2) Some arbitrary content sent after the initial response
-		r, h, b := tryHttp(chunk)
+		r, h, b := tryHttp(chunk.Data)
 		if r != nil {
 			event.PostHttp(s.stream.Cid, s.stream.Direction, chunk.Stamp, d, r, h, b)
 		} else {
@@ -65,30 +66,32 @@ func (s *Scanner) scan() {
 	s.stream.Chunks = s.stream.Chunks[0:0]
 	s.stream.Data.Reset()
 
-	// Unlock stream
-	s.Unlock()
+	// All modifications done, stream can proceed
+	s.stream.Unlock()
 
 	// TODO alternative to locking: Pass all chunks through channels. More difficult to merge adjacent chunks maybe?
 }
 
 func tryHttp(data []byte) (start []byte, headers textproto.MIMEHeader, body []byte) {
-	tp := textproto.NewReader(bufio.NewReader(bytes.NewReader(data)))
+	var err error
+	buf := bufio.NewReader(bytes.NewReader(data))
+	tp := textproto.NewReader(buf)
 	
 	// Try to parse <Method> <URL> <HTTP/version>
 	//           or <HTTP/version> <Code> <Status>
-	start, err := tp.ReadLineBytes()
-	f := strings.SplitN(request, " ", 3)
+	start, err = tp.ReadLineBytes()
+	f := strings.SplitN(string(start), " ", 3)
 	if len(f) < 2 || (f[2] != "HTTP/1.0" && f[2] != "HTTP/1.1" && f[0] != "HTTP/1.0" && f[0] != "HTTP/1.1") {
 		return nil, nil, nil
 	}
 
 	// Read headers
-	headers, err := tp.ReadMIMEHeader()
+	headers, err = tp.ReadMIMEHeader()
 	if err != nil {
 		return nil, nil, nil
 	}
 
 	// The rest is content
-	body = r.Buffered
+	body = data[len(data) - buf.Buffered():]
 	return
 }

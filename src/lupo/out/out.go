@@ -1,9 +1,11 @@
-package util
+package out
 
 import (
 	"time"
 	"os"
 	"fmt"
+	"bufio"
+	"bytes"
 )
 
 // Timestamp format for logging
@@ -13,6 +15,15 @@ var Out = os.Stdout
 
 func Stamp(t time.Time) {
 	Out.WriteString(t.Format(stamp))
+}
+
+func WriteWithoutNewlines(s []byte) {
+	// TODO not sure if this is the most efficient way
+	scanner := bufio.NewScanner(bytes.NewReader(s))
+	for scanner.Scan() {
+    	Out.Write(scanner.Bytes())
+    	Out.WriteString(" ")
+	}
 }
 
 // Log with optimized timestamp

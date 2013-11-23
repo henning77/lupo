@@ -1,8 +1,9 @@
-package filter
+package printer
 
 import (
 	"lupo/event"
 	"lupo/out"
+	"fmt"
 )
 
 const maxPayloadCharsToPrint = 32
@@ -29,23 +30,43 @@ func Accept() {
 // HTTP event examples:
 // 15:04:05.000 ->1    GET / HTTP/1.0
 // 15:04:05.000 <-1    HTTP/1.0 OK
-func printEvent(e *event.Event) {
-	out.Stamp(e.Stamp)
-	printKind(e.Kind)
-	out.Out.WriteString(fmt.Sprintf("%-4d ", e.Cid))
-	e.printDesc()
-}
+func printEvent(o interface{}) {
+	ev := o.(event.Event)
+	out.Stamp(ev.Stamp)
+	printKind(ev.Kind)
+	out.Out.WriteString(fmt.Sprintf("%-4d ", ev.Cid))
 
-func printKind(k EventKind) {
-	switch k {
-		case Connect: out.Out.WriteString(" [")
-		case Disconnect: out.Out.WriteString(" ]")
-		case Send: out.Out.WriteString("->")
-		case Receive: out.Out.WriteString("<-")
+	switch t := o.(type) {
+		case event.Event:
+			printDesc(&t)
+		case event.HttpEvent:
+			printHttpDesc(&t)
 	}
 }
 
-func (e *event.HttpEvent) printDesc() {
+func printKind(k event.EventKind) {
+	switch k {
+		case event.Connect: out.Out.WriteString(" [")
+		case event.Disconnect: out.Out.WriteString(" ]")
+		case event.Send: out.Out.WriteString("->")
+		case event.Receive: out.Out.WriteString("<-")
+	}
+}
+
+func printDesc(e *event.Event) {
+	switch e.Kind {
+		case event.Connect:
+			out.Out.WriteString("Opened from ")
+			out.Out.Write(e.Payload)
+		case event.Disconnect:
+			out.Out.WriteString("Closed")
+		case event.Send: fallthrough
+		case event.Receive:
+			printPayload(e.Payload)
+	}	
+}
+
+func printHttpDesc(e *event.HttpEvent) {
 	// Can only be Send or Receive
 	out.Out.Write(e.Start)
 
@@ -54,34 +75,14 @@ func (e *event.HttpEvent) printDesc() {
 	printPayload(e.Body)
 }
 
-func (e *event.Event) printDesc() {
-	switch k {
-		case Connect:
-			out.Out.WriteString("Opened from ")
-			out.Out.Write(e.Payload)
-		case Disconnect:
-			out.Out.WriteString("Closed")
-		case Send: fallthrough
-		case Receive:
-			printPayload(e.Payload)
-	}	
-}
-
-func printPayload(d []byte) []byte {
-	/*
-	switch t := e.(type) {
-		case event.HttpEvent:
-
-		case event.Event:
-
-	}*/
-	textual := d[:math.Min(len(d), maxPayloadCharsToPrint)]
+func printPayload(d []byte) {
+	textual := d[:min(len(d), maxPayloadCharsToPrint)]
 	if isPrintable(textual) {
-		out.Out.WriteWithoutNewlines()
+		out.WriteWithoutNewlines(textual)
 		out.Out.WriteString("\n")
 	} else {
 		out.Out.WriteString(fmt.Sprintf("%d bytes [", len(d)))
-		printBinary(d[:math.Min(len(d), maxPayloadBytesToPrint)])
+		printBinary(d[:min(len(d), maxPayloadBytesToPrint)])
 		out.Out.WriteString(fmt.Sprintf("]\n"))
 	}
 }
@@ -93,8 +94,9 @@ func printBinary(d []byte) {
 		if i>0 && i%8 == 0 {
 			out.Out.WriteString(" ")
 		}
-		out.Out.Write(hextable[b>>4])
-		out.Out.Write(hextable[b&0x0f])
+		// TODO ugly
+		out.Out.WriteString(string(hextable[b>>4]))
+		out.Out.WriteString(string(hextable[b&0x0f]))
 	}
 }
 
@@ -105,6 +107,14 @@ func isPrintable(d []byte) bool {
 		}
 	}
 	return true
+}
+
+func min(a, b int) int {
+	if a > b {
+		return b
+	} else {
+		return a
+	}
 }
 
 /*
