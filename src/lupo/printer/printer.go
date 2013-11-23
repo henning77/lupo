@@ -1,19 +1,18 @@
 package printer
 
 import (
+	"fmt"
 	"lupo/event"
 	"lupo/out"
-	"fmt"
 )
 
 const maxPayloadCharsToPrint = 32
 const maxPayloadBytesToPrint = 16
 
-
 func Accept() {
 	for {
 		select {
-		case e:= <-event.Events:
+		case e := <-event.Events:
 			printEvent(e)
 		}
 	}
@@ -37,33 +36,38 @@ func printEvent(o interface{}) {
 	out.Out.WriteString(fmt.Sprintf("%-4d ", ev.Cid))
 
 	switch t := o.(type) {
-		case event.Event:
-			printDesc(&t)
-		case event.HttpEvent:
-			printHttpDesc(&t)
+	case event.Event:
+		printDesc(&t)
+	case event.HttpEvent:
+		printHttpDesc(&t)
 	}
 }
 
 func printKind(k event.EventKind) {
 	switch k {
-		case event.Connect: out.Out.WriteString(" [")
-		case event.Disconnect: out.Out.WriteString(" ]")
-		case event.Send: out.Out.WriteString("->")
-		case event.Receive: out.Out.WriteString("<-")
+	case event.Connect:
+		out.Out.WriteString(" [")
+	case event.Disconnect:
+		out.Out.WriteString(" ]")
+	case event.Send:
+		out.Out.WriteString("->")
+	case event.Receive:
+		out.Out.WriteString("<-")
 	}
 }
 
 func printDesc(e *event.Event) {
 	switch e.Kind {
-		case event.Connect:
-			out.Out.WriteString("Opened from ")
-			out.Out.Write(e.Payload)
-		case event.Disconnect:
-			out.Out.WriteString("Closed")
-		case event.Send: fallthrough
-		case event.Receive:
-			printPayload(e.Payload)
-	}	
+	case event.Connect:
+		out.Out.WriteString("Opened from ")
+		out.Out.Write(e.Payload)
+	case event.Disconnect:
+		out.Out.WriteString("Closed")
+	case event.Send:
+		fallthrough
+	case event.Receive:
+		printPayload(e.Payload)
+	}
 }
 
 func printHttpDesc(e *event.HttpEvent) {
@@ -91,7 +95,7 @@ const hextable = "0123456789abcdef"
 
 func printBinary(d []byte) {
 	for i, b := range d {
-		if i>0 && i%8 == 0 {
+		if i > 0 && i%8 == 0 {
 			out.Out.WriteString(" ")
 		}
 		// TODO ugly

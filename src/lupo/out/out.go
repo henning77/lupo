@@ -1,11 +1,11 @@
 package out
 
 import (
-	"time"
-	"os"
-	"fmt"
 	"bufio"
 	"bytes"
+	"fmt"
+	"os"
+	"time"
 )
 
 // Timestamp format for logging
@@ -21,8 +21,8 @@ func WriteWithoutNewlines(s []byte) {
 	// TODO not sure if this is the most efficient way
 	scanner := bufio.NewScanner(bytes.NewReader(s))
 	for scanner.Scan() {
-    	Out.Write(scanner.Bytes())
-    	Out.WriteString(" ")
+		Out.Write(scanner.Bytes())
+		Out.WriteString(" ")
 	}
 }
 

@@ -1,29 +1,29 @@
 package handler
 
 import (
-	"lupo/out"
-	"lupo/event"
-	"lupo/stream"
-	"lupo/scanner"
 	"io"
+	"lupo/event"
+	"lupo/out"
+	"lupo/scanner"
+	"lupo/stream"
 	"net"
 )
 
 type Handler struct {
-	cid event.ConnId
-	dst net.Conn
-	src net.Conn
+	cid  event.ConnId
+	dst  net.Conn
+	src  net.Conn
 	send *stream.Stream
-	rcv *stream.Stream
+	rcv  *stream.Stream
 }
 
 func NewHandler(dst net.Conn, src net.Conn, cid event.ConnId) *Handler {
 	result := &Handler{
-		cid:cid,
-		dst:dst,
-		src:src,
-		send:stream.NewStream(cid, event.Send),
-		rcv:stream.NewStream(cid, event.Receive)}
+		cid:  cid,
+		dst:  dst,
+		src:  src,
+		send: stream.NewStream(cid, event.Send),
+		rcv:  stream.NewStream(cid, event.Receive)}
 
 	// Set up scanners
 	result.send.Listener = scanner.NewScanner(result.send)

@@ -1,10 +1,10 @@
 package stream
 
 import (
-	"lupo/event"
-	"time"
 	"bytes"
+	"lupo/event"
 	"sync"
+	"time"
 )
 
 const (
@@ -17,7 +17,7 @@ type Listener interface {
 
 type Chunk struct {
 	Stamp time.Time
-	Data []byte
+	Data  []byte
 }
 
 type Stream struct {
@@ -28,19 +28,19 @@ type Stream struct {
 	// Either Send or Receive
 	Direction event.EventKind
 
-	Data bytes.Buffer
+	Data   bytes.Buffer
 	Chunks []Chunk
 
 	// Will be notified when the stream updates
 	Listener
 }
 
-func NewStream(cid event.ConnId, dir event.EventKind) (*Stream) {
+func NewStream(cid event.ConnId, dir event.EventKind) *Stream {
 	return &Stream{
-		Cid:cid,
-		Direction:dir,
+		Cid:       cid,
+		Direction: dir,
 		// We should never have more than 10 chunks in a stream (scanner should remove them before the limit is reached)
-		Chunks:make([]Chunk, 0, 10)}
+		Chunks: make([]Chunk, 0, 10)}
 }
 
 func (s *Stream) Write(p []byte) (n int, err error) {
@@ -58,18 +58,18 @@ func (s *Stream) Write(p []byte) (n int, err error) {
 	if len(s.Chunks) > 0 {
 		// Check if it is worthwile to create another chunk (i.e. time diff is sufficient)
 		now := time.Now()
-		lastChunk := s.Chunks[len(s.Chunks) - 1]
+		lastChunk := s.Chunks[len(s.Chunks)-1]
 		if now.Sub(lastChunk.Stamp) < chunkMinSilence {
 			// Extend the last chunk
-			lastChunk.Data = d[len(d) - len(p) - len(lastChunk.Data):]
+			lastChunk.Data = d[len(d)-len(p)-len(lastChunk.Data):]
 			adjacentChunk = true
-		}		
+		}
 	}
 	if !adjacentChunk {
 		// Create new chunk
-		chunk := Chunk{Stamp:time.Now(), Data:d[len(d) - len(p):]}
-		s.Chunks = s.Chunks[:len(s.Chunks) + 1]
-		s.Chunks[len(s.Chunks) - 1] = chunk
+		chunk := Chunk{Stamp: time.Now(), Data: d[len(d)-len(p):]}
+		s.Chunks = s.Chunks[:len(s.Chunks)+1]
+		s.Chunks[len(s.Chunks)-1] = chunk
 	}
 
 	// Release stream for scanner

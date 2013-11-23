@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"os"
-	"lupo/server"
 	"lupo/printer"
+	"lupo/server"
+	"os"
 )
 
 func init() {

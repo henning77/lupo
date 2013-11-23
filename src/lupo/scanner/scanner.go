@@ -1,13 +1,13 @@
 package scanner
 
 import (
-	"lupo/stream"
-	"lupo/event"
-	"net/textproto"
-	"time"
 	"bufio"
-	"strings"
 	"bytes"
+	"lupo/event"
+	"lupo/stream"
+	"net/textproto"
+	"strings"
+	"time"
 )
 
 const (
@@ -16,11 +16,11 @@ const (
 
 type Scanner struct {
 	stream *stream.Stream
-	timer *time.Timer
+	timer  *time.Timer
 }
 
-func NewScanner(s *stream.Stream) (*Scanner) {
-	return &Scanner{stream:s}
+func NewScanner(s *stream.Stream) *Scanner {
+	return &Scanner{stream: s}
 }
 
 // Notify scanner that the watched stream has changed & a rescan should take place.
@@ -31,9 +31,9 @@ func (s *Scanner) NotifyUpdate() {
 	} else {
 		// Trigger scan after delay, so adjacent chunks have time to come in.
 		s.timer = time.AfterFunc(scanDelay, func() {
-				s.scan()
-			})
-	}	
+			s.scan()
+		})
+	}
 
 	// TODO Alternative strategy: don't reschedule, just let it fire at the scheduled time (i.e. prevent stream from clogging up)
 }
@@ -76,7 +76,7 @@ func tryHttp(data []byte) (start []byte, headers textproto.MIMEHeader, body []by
 	var err error
 	buf := bufio.NewReader(bytes.NewReader(data))
 	tp := textproto.NewReader(buf)
-	
+
 	// Try to parse <Method> <URL> <HTTP/version>
 	//           or <HTTP/version> <Code> <Status>
 	start, err = tp.ReadLineBytes()
@@ -92,6 +92,6 @@ func tryHttp(data []byte) (start []byte, headers textproto.MIMEHeader, body []by
 	}
 
 	// The rest is content
-	body = data[len(data) - buf.Buffered():]
+	body = data[len(data)-buf.Buffered():]
 	return
 }

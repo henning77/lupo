@@ -1,13 +1,13 @@
 package server
 
 import (
-	"lupo/out"
 	"crypto/tls"
-	"os"
-	"net"
 	"fmt"
 	"lupo/event"
 	"lupo/handler"
+	"lupo/out"
+	"net"
+	"os"
 )
 
 // Host:port to listen from
@@ -59,7 +59,7 @@ func handleConnection(src net.Conn) {
 	} else {
 		dst, err = net.Dial("tcp", To)
 	}
-	
+
 	if err != nil {
 		out.Printf("Error connecting to dest: %v", err)
 		panic(err)
@@ -79,7 +79,7 @@ func Listen() {
 	} else {
 		ln, err = net.Listen("tcp", From)
 	}
-	
+
 	if err != nil {
 		out.Printf("Could not open port: %v", err)
 		os.Exit(1)
