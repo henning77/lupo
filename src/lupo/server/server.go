@@ -60,6 +60,7 @@ func handleConnection(src net.Conn) {
 
 	if err != nil {
 		out.Printf("Error connecting to dest: %v", err)
+		src.Close()
 		panic(err)
 	}
 
