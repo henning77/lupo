@@ -10,13 +10,13 @@ import (
 )
 
 // Host:port to listen from
-var From string
+var From string = ""
 
 // Host:port to forward to
-var To string
+var To string = ""
 
 // If true, use SSL/TLS connections
-var Ssl bool
+var Ssl bool = false
 
 // Count the connections to make them easily identifiable
 var nextConnId = make(chan event.ConnId)

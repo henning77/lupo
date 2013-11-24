@@ -6,10 +6,9 @@ import (
 	"lupo/out"
 )
 
-const (
-	maxPayloadCharsToPrint = 80
-	maxPayloadBytesToPrint = 40
-)
+var MaxPayloadCharsToPrint = 80
+var MaxPayloadBytesToPrint = MaxPayloadCharsToPrint / 2
+var Headers = false
 
 func Accept() {
 	for {
@@ -80,24 +79,27 @@ func printDesc(e *event.Event) {
 func printHttpDesc(e *event.HttpEvent) {
 	// Can only be Send or Receive
 	out.Out.Write(e.Start)
+	out.Out.WriteString(" ")
 
-	// TODO make configurable if headers are printed
+	if (Headers) {
+		out.Out.WriteString(fmt.Sprintf("%v ", e.Headers))
+	}
 
 	printPayload(e.Body)
 }
 
 func printPayload(d []byte) {
-	textual := d[:min(len(d), maxPayloadCharsToPrint)]
+	textual := d[:min(len(d), MaxPayloadCharsToPrint)]
 	if isPrintable(textual) {
 		out.WriteWithoutNewlines(textual)
-		if len(d) > maxPayloadCharsToPrint {
+		if len(d) > MaxPayloadCharsToPrint {
 			out.Out.WriteString(" (...)")
 		}
 		out.Out.WriteString("\n")
 	} else {
 		out.Out.WriteString(fmt.Sprintf("%d bytes [", len(d)))
-		printBinary(d[:min(len(d), maxPayloadBytesToPrint)])		
-		if len(d) > maxPayloadBytesToPrint {
+		printBinary(d[:min(len(d), MaxPayloadBytesToPrint)])		
+		if len(d) > MaxPayloadBytesToPrint {
 			out.Out.WriteString(" (...)")
 		}
 		out.Out.WriteString(fmt.Sprintf("]\n"))
