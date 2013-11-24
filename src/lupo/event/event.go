@@ -34,12 +34,12 @@ type HttpEvent struct {
 	Body    []byte
 }
 
-func PostConnect(cid ConnId) {
+func PostConnect(cid ConnId, from string) {
 	Events <- &Event{
 		Cid:     cid,
 		Kind:    Connect,
 		Stamp:   time.Now(),
-		Payload: nil}
+		Payload: []byte(from)}
 }
 
 func PostDisconnect(cid ConnId) {

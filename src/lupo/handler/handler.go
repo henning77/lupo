@@ -33,7 +33,7 @@ func NewHandler(dst net.Conn, src net.Conn, cid event.ConnId) *Handler {
 }
 
 func (h *Handler) Handle() {
-	event.PostConnect(h.cid)
+	event.PostConnect(h.cid, h.src.RemoteAddr().String())
 
 	// Copy & create events in both directions
 	go copyWithBuffer(h.dst, h.src, h.cid, h.send)

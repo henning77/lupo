@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"lupo/event"
 )
 
 // Timestamp format for logging
@@ -15,6 +16,10 @@ var Out = os.Stdout
 
 func Stamp(t time.Time) {
 	Out.WriteString(t.Format(stamp))
+}
+
+func Cid(cid event.ConnId) {
+	Out.WriteString(fmt.Sprintf("%-4d ", cid))
 }
 
 func WriteWithoutNewlines(s []byte) {

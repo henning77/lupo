@@ -2,7 +2,6 @@ package server
 
 import (
 	"crypto/tls"
-	"fmt"
 	"lupo/event"
 	"lupo/handler"
 	"lupo/out"
@@ -50,7 +49,6 @@ func tlsClientConfig() *tls.Config {
 
 func handleConnection(src net.Conn) {
 	cid := <-nextConnId
-	out.Print(fmt.Sprintf("New connection: %v (from %v)", cid, src.RemoteAddr()))
 
 	var dst net.Conn
 	var err error

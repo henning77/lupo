@@ -12,8 +12,13 @@ const maxPayloadBytesToPrint = 16
 func Accept() {
 	for {
 		select {
-		case e := <-event.Events:
-			printEvent(e)
+		case o := <-event.Events:
+			switch ev := o.(type) {
+			case *event.Event:
+				printEvent(ev)
+			case *event.HttpEvent:
+				printHttpEvent(ev)
+			}			
 		}
 	}
 }
@@ -25,22 +30,21 @@ func Accept() {
 // 15:04:05.000 ->1    some text data
 // 15:04:05.000 <-10   32 bytes [81 4f d3 c2 ...]
 // 15:04:05.000  ]10   Closed
-//
+func printEvent(ev *event.Event) {
+	out.Stamp(ev.Stamp)
+	printKind(ev.Kind)
+	out.Cid(ev.Cid)
+	printDesc(ev)
+}
+
 // HTTP event examples:
 // 15:04:05.000 ->1    GET / HTTP/1.0
 // 15:04:05.000 <-1    HTTP/1.0 OK
-func printEvent(o interface{}) {
-	ev := o.(event.Event)
+func printHttpEvent(ev *event.HttpEvent) {
 	out.Stamp(ev.Stamp)
 	printKind(ev.Kind)
-	out.Out.WriteString(fmt.Sprintf("%-4d ", ev.Cid))
-
-	switch t := o.(type) {
-	case event.Event:
-		printDesc(&t)
-	case event.HttpEvent:
-		printHttpDesc(&t)
-	}
+	out.Cid(ev.Cid)
+	printHttpDesc(ev)
 }
 
 func printKind(k event.EventKind) {
@@ -61,8 +65,9 @@ func printDesc(e *event.Event) {
 	case event.Connect:
 		out.Out.WriteString("Opened from ")
 		out.Out.Write(e.Payload)
+		out.Out.WriteString("\n")
 	case event.Disconnect:
-		out.Out.WriteString("Closed")
+		out.Out.WriteString("Closed\n")
 	case event.Send:
 		fallthrough
 	case event.Receive:
