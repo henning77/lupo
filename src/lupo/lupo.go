@@ -116,6 +116,8 @@ func copyWithLog(dst io.Writer, src io.Reader, direction eventKind, done chan<- 
 }
 
 func handleConnection(src net.Conn) {
+	defer src.Close()
+
 	events <- event{kind:connect}
 
 	var dst net.Conn
@@ -129,6 +131,7 @@ func handleConnection(src net.Conn) {
 	if err != nil {
 		log.Panicf("Error connecting to dest: %v", err)
 	}
+	defer dst.Close()
 
 	done := make(chan bool)
 
