@@ -6,8 +6,10 @@ import (
 	"lupo/out"
 )
 
-const maxPayloadCharsToPrint = 32
-const maxPayloadBytesToPrint = 16
+const (
+	maxPayloadCharsToPrint = 80
+	maxPayloadBytesToPrint = 40
+)
 
 func Accept() {
 	for {
@@ -63,7 +65,7 @@ func printKind(k event.EventKind) {
 func printDesc(e *event.Event) {
 	switch e.Kind {
 	case event.Connect:
-		out.Out.WriteString("Opened from ")
+		out.Out.WriteString("New connection from ")
 		out.Out.Write(e.Payload)
 		out.Out.WriteString("\n")
 	case event.Disconnect:
@@ -88,10 +90,16 @@ func printPayload(d []byte) {
 	textual := d[:min(len(d), maxPayloadCharsToPrint)]
 	if isPrintable(textual) {
 		out.WriteWithoutNewlines(textual)
+		if len(d) > maxPayloadCharsToPrint {
+			out.Out.WriteString(" (...)")
+		}
 		out.Out.WriteString("\n")
 	} else {
 		out.Out.WriteString(fmt.Sprintf("%d bytes [", len(d)))
-		printBinary(d[:min(len(d), maxPayloadBytesToPrint)])
+		printBinary(d[:min(len(d), maxPayloadBytesToPrint)])		
+		if len(d) > maxPayloadBytesToPrint {
+			out.Out.WriteString(" (...)")
+		}
 		out.Out.WriteString(fmt.Sprintf("]\n"))
 	}
 }
