@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 	"crypto/tls"
+	"os/signal"
 )
 
 // Host:port to listen from
@@ -115,7 +116,9 @@ func copyWithLog(dst io.Writer, src io.Reader, direction eventKind, done chan<- 
 	done <- true	
 }
 
-func handleConnection(src net.Conn) {
+func handleConnection(src net.Conn, closeConn <-chan bool, connClosed chan<- bool) {
+	//defer os.Stdout.WriteString("Closed conn")
+	defer func() { connClosed <- true } ()
 	defer src.Close()
 
 	events <- event{kind:connect}
@@ -139,11 +142,26 @@ func handleConnection(src net.Conn) {
 	go copyWithLog(dst, src, send, done)
 	go copyWithLog(src, dst, receive, done)
 
-	// Wait for connection to close
-	<-done
-	events <- event{kind:disconnect}
-	// Wait for the other stream to close as well
-	<-done
+	openStreams := 2
+
+HandlerLoop:
+	for {
+		select {
+		case <-done:
+			if openStreams == 2 {
+				// First stream has been closed
+				events <- event{kind:disconnect}
+				openStreams--
+			} else {
+				// Second stream has been closed -> Connection is closed, can exit
+				break HandlerLoop
+			}
+
+		case <-closeConn:
+			// Server signals we should close
+			break HandlerLoop
+		}
+	}
 }
 
 func tlsServerConfig() *tls.Config {
@@ -159,23 +177,7 @@ func tlsClientConfig() *tls.Config {
 	return &tls.Config{InsecureSkipVerify: true}
 }
 
-func init() {
-	flag.StringVar(&from, "from", "", "Source host/port to listen to. Example: ':8081'")
-	flag.StringVar(&to, "to", "", "Destination host/port to forward to. Example: 'localhost:8080'")
-	flag.BoolVar(&ssl, "ssl", false, "If true, expect and provide SSL/TLS connections. Needs cert.pem + key.pem in the same directory")
-	flag.IntVar(&interval, "interval", 1000, "Interval in which to collect (ms)")
-}
-
-func main() {
-	flag.Parse()
-	if len(from) == 0 || len(to) == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	printStatHeader()
-	go statsCollector()
-
+func listen(c chan<- net.Conn) {
 	var ln net.Listener
 	var err error
 	if ssl {
@@ -188,11 +190,69 @@ func main() {
 		log.Panicf("Could not open port: %v", err)
 	}
 
-	for {
+	for  {
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Panicf("Error accepting: %v", err)
 		}
-		go handleConnection(conn)
+		c<-conn
 	}
+}
+
+func server() {
+	// Listen for SIGTERM (kill) and SIGINT (Ctrl+C)
+	sigExit := make(chan os.Signal, 2)
+	signal.Notify(sigExit, os.Interrupt, os.Kill)
+
+	connCount := 0
+	newConn := make(chan net.Conn)
+	closeConn := make(chan bool)
+	connClosed := make(chan bool)
+
+	go listen(newConn)
+
+ServerLoop:
+	for {
+		select {
+		case c := <-newConn:
+			connCount++
+			go handleConnection(c, closeConn, connClosed)
+		case <-connClosed:
+			connCount--
+		case <-sigExit:
+			break ServerLoop
+		}
+	}
+
+	// Signal close to all connection gorountines
+	for i:=0; i<connCount; i++ {
+		closeConn<-true
+	}
+
+	// Wait until all are closed (goroutines signal back)
+	for i:=0; i<connCount; i++ {
+		<-connClosed
+	}
+}
+
+func init() {
+	flag.StringVar(&from, "from", "", "Source host/port to listen to. Example: ':8081'")
+	flag.StringVar(&to, "to", "", "Destination host/port to forward to. Example: 'localhost:8080'")
+	flag.BoolVar(&ssl, "ssl", false, "If true, expect and provide SSL/TLS connections. Needs cert.pem + key.pem in the same directory")
+	flag.IntVar(&interval, "interval", 1000, "Interval in which to collect (ms)")
+}
+
+func main() {	
+	flag.Parse()
+	if len(from) == 0 || len(to) == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	printStatHeader()
+
+	go statsCollector()
+	server()
+
+	os.Exit(0)
 }
