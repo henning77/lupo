@@ -68,8 +68,7 @@ func (s *Stream) Write(p []byte) (n int, err error) {
 	if !adjacentChunk {
 		// Create new chunk
 		chunk := Chunk{Stamp: time.Now(), Data: d[len(d)-len(p):]}
-		s.Chunks = s.Chunks[:len(s.Chunks)+1]
-		s.Chunks[len(s.Chunks)-1] = chunk
+		s.Chunks = append(s.Chunks, chunk)
 	}
 
 	// Release stream for scanner
