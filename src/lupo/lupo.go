@@ -10,6 +10,7 @@ import (
 	"time"
 	"crypto/tls"
 	"os/signal"
+	"syscall"
 )
 
 // Host:port to listen from
@@ -200,9 +201,9 @@ func listen(c chan<- net.Conn) {
 }
 
 func server() {
-	// Listen for SIGTERM (kill) and SIGINT (Ctrl+C)
-	sigExit := make(chan os.Signal, 2)
-	signal.Notify(sigExit, os.Interrupt, os.Kill)
+	// Listen for SIGINT (Ctrl+C), SIGKILL (hard exit), SIGTERM (graceful exit)
+	sigExit := make(chan os.Signal, 3)
+	signal.Notify(sigExit, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	connCount := 0
 	newConn := make(chan net.Conn)
