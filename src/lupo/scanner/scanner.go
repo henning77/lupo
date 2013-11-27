@@ -6,7 +6,6 @@ import (
 	"lupo/event"
 	"lupo/stream"
 	"net/textproto"
-	"strings"
 	"time"
 )
 
@@ -72,7 +71,31 @@ func (s *Scanner) scan() {
 	// TODO alternative to locking: Pass all chunks through channels. More difficult to merge adjacent chunks maybe?
 }
 
+// All possible starting bytes of a HTTP request or response
+// These are byte arrays to make the comparison easier
+var httpStart = [][]byte{[]byte("HTTP"), []byte("GET"), []byte("POST"), []byte("HEAD"), []byte("PUT"), []byte("OPTIONS"), 
+				 		 []byte("DELETE"), []byte("TRACE"), []byte("CONNECT"), []byte("MOVE")}
+const httpMin = "HTTP/1.1 200 OK"
+
+// Look for: HTTP, GET, POST, HEAD, PUT, OPTIONS, DELETE, TRACE, CONNECT, MOVE
+func checkHttpStart(d []byte) bool {
+	if len(d) < len(httpMin) {
+		return false
+	}
+	for _, v := range httpStart {
+		if bytes.Equal(v, d[:len(v)]) {
+			return true
+		}		
+	}
+	return false
+}
+
 func tryHttp(data []byte) (start []byte, headers textproto.MIMEHeader, body []byte) {
+	// Fail early by checking the first bytes
+	if !checkHttpStart(data) {
+		return
+	}
+
 	var err error
 	buf := bufio.NewReader(bytes.NewReader(data))
 	tp := textproto.NewReader(buf)
@@ -80,10 +103,6 @@ func tryHttp(data []byte) (start []byte, headers textproto.MIMEHeader, body []by
 	// Try to parse <Method> <URL> <HTTP/version>
 	//           or <HTTP/version> <Code> <Status>
 	start, err = tp.ReadLineBytes()
-	f := strings.SplitN(string(start), " ", 3)
-	if len(f) < 2 || (f[2] != "HTTP/1.0" && f[2] != "HTTP/1.1" && f[0] != "HTTP/1.0" && f[0] != "HTTP/1.1") {
-		return nil, nil, nil
-	}
 
 	// Read headers
 	headers, err = tp.ReadMIMEHeader()
