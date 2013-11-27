@@ -32,33 +32,18 @@ func Accept() {
 // 15:04:05.000 <-10   32 bytes [81 4f d3 c2 ...]
 // 15:04:05.000  ]10   Closed
 func printEvent(ev *event.Event) {
-	out.Stamp(ev.Stamp)
-	printKind(ev.Kind)
-	out.Cid(ev.Cid)
+	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
 	printDesc(ev)
+	out.ShortEntryEnd()
 }
 
 // HTTP event examples:
 // 15:04:05.000 ->1    GET / HTTP/1.0
 // 15:04:05.000 <-1    HTTP/1.0 OK
 func printHttpEvent(ev *event.HttpEvent) {
-	out.Stamp(ev.Stamp)
-	printKind(ev.Kind)
-	out.Cid(ev.Cid)
+	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
 	printHttpDesc(ev)
-}
-
-func printKind(k event.EventKind) {
-	switch k {
-	case event.Connect:
-		out.Out.WriteString(" [")
-	case event.Disconnect:
-		out.Out.WriteString(" ]")
-	case event.Send:
-		out.Out.WriteString("->")
-	case event.Receive:
-		out.Out.WriteString("<-")
-	}
+	out.ShortEntryEnd()
 }
 
 func printDesc(e *event.Event) {
@@ -66,12 +51,9 @@ func printDesc(e *event.Event) {
 	case event.Connect:
 		out.Out.WriteString("New connection from ")
 		out.Out.Write(e.Payload)
-		out.Out.WriteString("\n")
 	case event.Disconnect:
-		out.Out.WriteString("Closed\n")
-	case event.Send:
-		fallthrough
-	case event.Receive:
+		out.Out.WriteString("Closed connection")
+	default:
 		printPayload(e.Payload)
 	}
 }
@@ -95,14 +77,11 @@ func printPayload(d []byte) {
 		if len(d) > MaxPayloadCharsToPrint {
 			out.Out.WriteString(" (...)")
 		}
-		out.Out.WriteString("\n")
 	} else {
-		out.Out.WriteString(fmt.Sprintf("%d bytes [", len(d)))
 		printBinary(d[:min(len(d), MaxPayloadBytesToPrint)])		
 		if len(d) > MaxPayloadBytesToPrint {
 			out.Out.WriteString(" (...)")
 		}
-		out.Out.WriteString(fmt.Sprintf("]\n"))
 	}
 }
 

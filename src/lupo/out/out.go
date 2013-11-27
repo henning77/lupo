@@ -10,16 +10,20 @@ import (
 )
 
 // Timestamp format for logging
-const stamp = "15:04:05.000 "
+const stamp = "2006-01-02 15:04:05.000 "
 
 var Out = os.Stdout
 
-func Stamp(t time.Time) {
+// Generic format:
+// <timestamp> <kind><cid> <len> <desc>
+func ShortEntryBegin(t time.Time, k event.EventKind, cid event.ConnId, l int) {
 	Out.WriteString(t.Format(stamp))
+	Out.WriteString(k.String())
+	fmt.Fprintf(Out, "%-4d %5d ", cid, l)
 }
 
-func Cid(cid event.ConnId) {
-	Out.WriteString(fmt.Sprintf("%-4d ", cid))
+func ShortEntryEnd() {
+	Out.WriteString("\n")
 }
 
 func WriteWithoutNewlines(s []byte) {
@@ -31,16 +35,10 @@ func WriteWithoutNewlines(s []byte) {
 	}
 }
 
-// Log with optimized timestamp
-func Printf(s string, a ...interface{}) {
-	Out.WriteString(time.Now().Format(stamp))
-	Out.WriteString(fmt.Sprintf(s, a...))
-	Out.WriteString("\n")
-}
-
-// Log with optimized timestamp
-func Print(s string) {
-	Out.WriteString(time.Now().Format(stamp))
-	Out.WriteString(s)
-	Out.WriteString("\n")
+// Directly write an error message and exit
+func Fatalf(format string, v ...interface{}) {
+	ShortEntryBegin(time.Now(), event.Global, 0, 0)
+	fmt.Fprintf(Out, format, v...)
+	ShortEntryEnd()
+	os.Exit(1)
 }

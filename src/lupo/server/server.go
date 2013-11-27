@@ -6,7 +6,6 @@ import (
 	"lupo/handler"
 	"lupo/out"
 	"net"
-	"os"
 )
 
 // Host:port to listen from
@@ -36,8 +35,7 @@ func genConnectionIds() {
 func tlsServerConfig() *tls.Config {
 	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	if err != nil {
-		out.Printf("Could not read server certificate (cert.pem, key.pem): %v", err)
-		os.Exit(1)
+		out.Fatalf("Could not read server certificate (cert.pem, key.pem): %v", err)
 	}
 	return &tls.Config{Certificates: []tls.Certificate{cert}}
 }
@@ -58,10 +56,9 @@ func handleConnection(src net.Conn) {
 		dst, err = net.Dial("tcp", To)
 	}
 
-	if err != nil {
-		out.Printf("Error connecting to dest: %v", err)
+	if err != nil {		
 		src.Close()
-		panic(err)
+		out.Fatalf("Error connecting to dest: %v", err)
 	}
 
 	handler := handler.NewHandler(dst, src, cid)
@@ -69,7 +66,7 @@ func handleConnection(src net.Conn) {
 }
 
 func Listen() {
-	out.Printf("Listening to [%v], forwarding to [%v]", From, To)
+	event.PostGlobalf("Listening to [%v], forwarding to [%v]", From, To)
 
 	var ln net.Listener
 	var err error
@@ -80,15 +77,13 @@ func Listen() {
 	}
 
 	if err != nil {
-		out.Printf("Could not open port: %v", err)
-		os.Exit(1)
+		out.Fatalf("Could not open port: %v", err)
 	}
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			out.Printf("Error accepting: %v", err)
-			continue
+			panic(err)
 		}
 		go handleConnection(conn)
 	}

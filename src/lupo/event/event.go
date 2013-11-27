@@ -3,6 +3,7 @@ package event
 import (
 	"net/textproto"
 	"time"
+	"fmt"
 )
 
 // All events from all connections go here
@@ -17,7 +18,26 @@ const (
 	Disconnect
 	Send
 	Receive
+	Global
 )
+
+func (k EventKind) String() string {
+	switch k {
+	case Connect:
+		return " ["
+	case Disconnect:
+		return " ]"
+	case Send:
+		return "->"
+	case Receive:
+		return "<-"
+	case Global:
+		return "  "
+	default:
+		return "na"
+	}
+}
+
 
 // An event on a specific connection.
 type Event struct {
@@ -32,6 +52,18 @@ type HttpEvent struct {
 	Start   []byte
 	Headers textproto.MIMEHeader
 	Body    []byte
+}
+
+func PostGlobalf(s string, a ...interface{}) {
+	PostGlobal(fmt.Sprintf(s, a...))
+}
+
+func PostGlobal(desc string) {
+	Events <- &Event{
+		Cid:     0,
+		Kind:    Global,
+		Stamp:   time.Now(),
+		Payload: []byte(desc)}
 }
 
 func PostConnect(cid ConnId, from string) {
