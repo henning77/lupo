@@ -3,7 +3,6 @@ package handler
 import (
 	"io"
 	"lupo/event"
-	"lupo/out"
 	"lupo/scanner"
 	"lupo/stream"
 	"net"
@@ -33,9 +32,6 @@ func NewHandler(dst net.Conn, src net.Conn, cid event.ConnId) *Handler {
 }
 
 func (h *Handler) Handle() {
-	defer h.src.Close()
-	defer h.dst.Close()
-
 	event.PostConnect(h.cid, h.src.RemoteAddr().String())
 
 	done := make(chan bool)
@@ -44,18 +40,25 @@ func (h *Handler) Handle() {
 	go copyWithBuffer(h.dst, h.src, h.cid, h.send, done)
 	go copyWithBuffer(h.src, h.dst, h.cid, h.rcv, done)
 
-	// Wait for connection to close
+	// Wait for the first stream to close
 	<-done
+
+	// Close both connections
+	h.src.Close()
+	h.dst.Close()
 	event.PostDisconnect(h.cid)
-	// Wait for the other stream to close as well
+
+	// Wait for the second stream to quit
 	<-done
+				
+	close(done)
 }
 
 // Copy to dst and to event queue
 func copyWithBuffer(dst io.Writer, src io.Reader, cid event.ConnId, s *stream.Stream, done chan<- bool) {
 	multi := io.MultiWriter(dst, s)
 	if _, err := io.Copy(multi, src); err != nil {
-		out.Printf("Closed connection: %v", err)
+		//out.Printf("Closed connection: %v", err)
 	}
 
 	done <- true
