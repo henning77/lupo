@@ -57,7 +57,7 @@ func (s *Scanner) scan() {
 		if r != nil {
 			event.PostHttp(s.stream.Cid, s.stream.Direction, chunk.Stamp, d, r, h, b)
 		} else {
-			event.Post(s.stream.Cid, s.stream.Direction, chunk.Stamp, d)
+			event.PostData(s.stream.Cid, s.stream.Direction, chunk.Stamp, d)
 		}
 	}
 

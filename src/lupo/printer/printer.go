@@ -15,13 +15,45 @@ func Accept() {
 		select {
 		case o := <-event.Events:
 			switch ev := o.(type) {
-			case *event.Event:
-				printEvent(ev)
+			case *event.DataEvent:
+				printDataEvent(ev)
 			case *event.HttpEvent:
 				printHttpEvent(ev)
+			case *event.ConnectEvent:
+				printConnectEvent(ev)
+			case *event.DisconnectEvent:
+				printDisconnectEvent(ev)
+			case *event.MessageEvent:
+				printMessageEvent(ev)
+			default:
+				panic("Unexpected event")
 			}			
 		}
 	}
+}
+
+func printConnectEvent(ev *event.ConnectEvent) {
+	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
+	out.Out.WriteString("New connection from ")
+	out.Out.WriteString(ev.From)
+	out.ShortEntryEnd()
+}
+
+func printDisconnectEvent(ev *event.DisconnectEvent) {
+	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
+	if ev.Initiator == event.Send {
+		// Send stream was closed -> Client
+		out.Out.WriteString("Client closed connection")
+	} else {
+		out.Out.WriteString("Server closed connection")
+	}
+	out.ShortEntryEnd()
+}
+
+func printMessageEvent(ev *event.MessageEvent) {
+	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
+	out.Out.WriteString(ev.Message)
+	out.ShortEntryEnd()
 }
 
 // Print the event.
@@ -31,9 +63,9 @@ func Accept() {
 // 15:04:05.000 ->1    some text data
 // 15:04:05.000 <-10   32 bytes [81 4f d3 c2 ...]
 // 15:04:05.000  ]10   Closed
-func printEvent(ev *event.Event) {
+func printDataEvent(ev *event.DataEvent) {
 	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
-	printDesc(ev)
+	printPayload(e.Payload)
 	out.ShortEntryEnd()
 }
 
@@ -44,18 +76,6 @@ func printHttpEvent(ev *event.HttpEvent) {
 	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
 	printHttpDesc(ev)
 	out.ShortEntryEnd()
-}
-
-func printDesc(e *event.Event) {
-	switch e.Kind {
-	case event.Connect:
-		out.Out.WriteString("New connection from ")
-		out.Out.Write(e.Payload)
-	case event.Disconnect:
-		out.Out.WriteString("Closed connection")
-	default:
-		printPayload(e.Payload)
-	}
 }
 
 func printHttpDesc(e *event.HttpEvent) {
@@ -75,12 +95,12 @@ func printPayload(d []byte) {
 	if isPrintable(textual) {
 		out.WriteWithoutNewlines(textual)
 		if len(d) > MaxPayloadCharsToPrint {
-			out.Out.WriteString(" (...)")
+			out.Out.WriteString("(...)")
 		}
 	} else {
 		printBinary(d[:min(len(d), MaxPayloadBytesToPrint)])		
 		if len(d) > MaxPayloadBytesToPrint {
-			out.Out.WriteString(" (...)")
+			out.Out.WriteString("(...)")
 		}
 	}
 }

@@ -39,19 +39,40 @@ func (k EventKind) String() string {
 }
 
 
-// An event on a specific connection.
+// A generic event on a specific connection.
 type Event struct {
 	Cid     ConnId
 	Kind    EventKind
 	Stamp   time.Time
+}
+
+// Event where interesting data is sent
+type DataEvent struct {
+	Event
 	Payload []byte
 }
 
+// HTTP protocol event
 type HttpEvent struct {
-	Event
+	DataEvent
 	Start   []byte
 	Headers textproto.MIMEHeader
 	Body    []byte
+}
+
+type MessageEvent struct {
+	Event
+	Message string
+}
+
+type ConnectEvent struct {
+	Event
+	From string
+}
+
+type DisconnectEvent struct {
+	Event
+	Initiator EventKind
 }
 
 func PostGlobalf(s string, a ...interface{}) {
@@ -59,40 +80,35 @@ func PostGlobalf(s string, a ...interface{}) {
 }
 
 func PostGlobal(desc string) {
-	Events <- &Event{
-		Cid:     0,
-		Kind:    Global,
-		Stamp:   time.Now(),
-		Payload: []byte(desc)}
+	Events <- &MessageEvent{
+		Event:   Event{Cid: 0, Kind: Global, Stamp: time.Now()},
+		Message: desc}
 }
 
 func PostConnect(cid ConnId, from string) {
-	Events <- &Event{
-		Cid:     cid,
-		Kind:    Connect,
-		Stamp:   time.Now(),
-		Payload: []byte(from)}
+	Events <- &ConnectEvent{
+		Event:   Event{Cid: cid, Kind: Connect, Stamp: time.Now()},
+		From:    from}
 }
 
-func PostDisconnect(cid ConnId) {
-	Events <- &Event{
-		Cid:     cid,
-		Kind:    Disconnect,
-		Stamp:   time.Now(),
-		Payload: nil}
+// dir specifies which partner of the connection initiated the close.
+func PostDisconnect(cid ConnId, dir EventKind) {
+	Events <- &DisconnectEvent{
+		Event:   Event{Cid: cid, Kind: Disconnect, Stamp: time.Now()},		
+		Initiator: dir}
 }
 
-func Post(cid ConnId, kind EventKind, stamp time.Time, payload []byte) {
-	Events <- &Event{
-		Cid:     cid,
-		Kind:    kind,
-		Stamp:   stamp,
+func PostData(cid ConnId, kind EventKind, stamp time.Time, payload []byte) {
+	Events <- &DataEvent{
+		Event:   Event{Cid: cid, Kind: kind, Stamp: stamp},
 		Payload: payload}
 }
 
 func PostHttp(cid ConnId, kind EventKind, stamp time.Time, payload []byte, start []byte, headers textproto.MIMEHeader, body []byte) {
 	Events <- &HttpEvent{
-		Event:   Event{Cid: cid, Kind: kind, Stamp: stamp, Payload: payload},
+		DataEvent:   DataEvent{
+			Event:   Event{Cid: cid, Kind: kind, Stamp: stamp},
+			Payload: payload},
 		Start:   start,
 		Headers: headers,
 		Body:    body}
