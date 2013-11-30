@@ -40,7 +40,7 @@ Point your browser to http://localhost:8080. lupo will print something like:
 Example 2: Full logging
 -----------------------
 
-	If you prefer to see everything transmitted, use `-style full`.
+Use `-style full` to see everything transmitted:
 
 	lupo -from :8080 -to google.com:80 -style full
 
@@ -98,7 +98,7 @@ This is how a sample Websocket exchange looks like (which is mixed plain text / 
 
 Example 4: Log statistics
 -------------------------
-lupo prints statistics in a csv format, if you use the `-style stats` flag.
+Use the `-style stats` flag to print statistics in a csv format:
 
 	lupo -from :8080 -to google.com:80 -style stats
 
