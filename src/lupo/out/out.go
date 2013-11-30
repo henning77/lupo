@@ -16,13 +16,13 @@ var Out = os.Stdout
 
 // Generic format:
 // <timestamp> <kind><cid> <len> <desc>
-func ShortEntryBegin(t time.Time, k event.EventKind, cid event.ConnId, l int) {
+func EntryBegin(t time.Time, k event.EventKind, cid event.ConnId, l int) {
 	Out.WriteString(t.Format(stamp))
 	Out.WriteString(k.String())
 	fmt.Fprintf(Out, "%-4d %5d ", cid, l)
 }
 
-func ShortEntryEnd() {
+func EntryEnd() {
 	Out.WriteString("\n")
 }
 
@@ -37,8 +37,8 @@ func WriteWithoutNewlines(s []byte) {
 
 // Directly write an error message and exit
 func Fatalf(format string, v ...interface{}) {
-	ShortEntryBegin(time.Now(), event.Global, 0, 0)
+	EntryBegin(time.Now(), event.Global, 0, 0)
 	fmt.Fprintf(Out, format, v...)
-	ShortEntryEnd()
+	EntryEnd()
 	os.Exit(1)
 }

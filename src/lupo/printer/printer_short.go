@@ -10,21 +10,21 @@ var MaxPayloadCharsToPrint = 80
 var MaxPayloadBytesToPrint = MaxPayloadCharsToPrint / 2
 var Headers = false
 
-func Accept() {
+func Short() {
 	for {
 		select {
 		case o := <-event.Events:
 			switch ev := o.(type) {
 			case *event.DataEvent:
-				printDataEvent(ev)
+				printDataEventShort(ev)
 			case *event.HttpEvent:
-				printHttpEvent(ev)
+				printHttpEventShort(ev)
 			case *event.ConnectEvent:
-				printConnectEvent(ev)
+				printConnectEventShort(ev)
 			case *event.DisconnectEvent:
-				printDisconnectEvent(ev)
+				printDisconnectEventShort(ev)
 			case *event.MessageEvent:
-				printMessageEvent(ev)
+				printMessageEventShort(ev)
 			default:
 				panic("Unexpected event")
 			}			
@@ -32,28 +32,28 @@ func Accept() {
 	}
 }
 
-func printConnectEvent(ev *event.ConnectEvent) {
-	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
+func printConnectEventShort(ev *event.ConnectEvent) {
+	out.EntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
 	out.Out.WriteString("New connection from ")
 	out.Out.WriteString(ev.From)
-	out.ShortEntryEnd()
+	out.EntryEnd()
 }
 
-func printDisconnectEvent(ev *event.DisconnectEvent) {
-	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
+func printDisconnectEventShort(ev *event.DisconnectEvent) {
+	out.EntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
 	if ev.Initiator == event.Send {
 		// Send stream was closed -> Client
 		out.Out.WriteString("Client closed connection")
 	} else {
 		out.Out.WriteString("Server closed connection")
 	}
-	out.ShortEntryEnd()
+	out.EntryEnd()
 }
 
-func printMessageEvent(ev *event.MessageEvent) {
-	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
+func printMessageEventShort(ev *event.MessageEvent) {
+	out.EntryBegin(ev.Stamp, ev.Kind, ev.Cid, 0)
 	out.Out.WriteString(ev.Message)
-	out.ShortEntryEnd()
+	out.EntryEnd()
 }
 
 // Print the event.
@@ -63,22 +63,22 @@ func printMessageEvent(ev *event.MessageEvent) {
 // 15:04:05.000 ->1    some text data
 // 15:04:05.000 <-10   32 bytes [81 4f d3 c2 ...]
 // 15:04:05.000  ]10   Closed
-func printDataEvent(ev *event.DataEvent) {
-	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
-	printPayload(e.Payload)
-	out.ShortEntryEnd()
+func printDataEventShort(ev *event.DataEvent) {
+	out.EntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
+	printPayloadShort(ev.Payload)
+	out.EntryEnd()
 }
 
 // HTTP event examples:
 // 15:04:05.000 ->1    GET / HTTP/1.0
 // 15:04:05.000 <-1    HTTP/1.0 OK
-func printHttpEvent(ev *event.HttpEvent) {
-	out.ShortEntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
-	printHttpDesc(ev)
-	out.ShortEntryEnd()
+func printHttpEventShort(ev *event.HttpEvent) {
+	out.EntryBegin(ev.Stamp, ev.Kind, ev.Cid, len(ev.Payload))
+	printHttpDescShort(ev)
+	out.EntryEnd()
 }
 
-func printHttpDesc(e *event.HttpEvent) {
+func printHttpDescShort(e *event.HttpEvent) {
 	// Can only be Send or Receive
 	out.Out.Write(e.Start)
 	out.Out.WriteString(" ")
@@ -87,12 +87,12 @@ func printHttpDesc(e *event.HttpEvent) {
 		out.Out.WriteString(fmt.Sprintf("%v ", e.Headers))
 	}
 
-	printPayload(e.Body)
+	printPayloadShort(e.Body)
 }
 
-func printPayload(d []byte) {
+func printPayloadShort(d []byte) {
 	textual := d[:min(len(d), MaxPayloadCharsToPrint)]
-	if isPrintable(textual) {
+	if isAllPrintable(textual) {
 		out.WriteWithoutNewlines(textual)
 		if len(d) > MaxPayloadCharsToPrint {
 			out.Out.WriteString("(...)")
@@ -118,7 +118,7 @@ func printBinary(d []byte) {
 	}
 }
 
-func isPrintable(d []byte) bool {
+func isAllPrintable(d []byte) bool {
 	for _, b := range d {
 		if !(b == 0x0d || b == 0x0a || (b >= 0x20 && b <= 0x7e)) {
 			return false
