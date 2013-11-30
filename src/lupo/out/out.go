@@ -10,14 +10,15 @@ import (
 )
 
 // Timestamp format for logging
-const stamp = "2006-01-02 15:04:05.000 "
+const Stampf = "2006-01-02 15:04:05.000"
 
 var Out = os.Stdout
 
 // Generic format:
 // <timestamp> <kind><cid> <len> <desc>
 func EntryBegin(t time.Time, k event.EventKind, cid event.ConnId, l int) {
-	Out.WriteString(t.Format(stamp))
+	Out.WriteString(t.Format(Stampf))
+	Out.WriteString(" ")
 	Out.WriteString(k.String())
 	fmt.Fprintf(Out, "%-4d %5d ", cid, l)
 }
