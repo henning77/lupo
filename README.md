@@ -1,5 +1,5 @@
-lupo. simple network logging.
-=============================
+lupo. simple network debugging.
+===============================
 
 lupo is useful for debugging network communications.
 
